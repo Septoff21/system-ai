@@ -4,6 +4,7 @@ const { checkStatus, chatStream } = require('./services/ollama');
 const { ConversationManager } = require('./services/conversation');
 const { generateSpeech, startServer: startTtsServer, shutdown: shutdownTts } = require('./services/tts');
 const { transcribe, startServer: startSttServer, shutdown: shutdownStt } = require('./services/stt');
+const fileops = require('./services/fileops');
 
 let mainWindow = null;
 let tray = null;
@@ -148,8 +149,8 @@ ipcMain.handle('ollama:status', async () => {
   return checkStatus();
 });
 
-// Ollama chat — streaming display + full-text TTS (no sentence splitting)
-ipcMain.handle('ollama:chat', async (event, { model, message, voiceEnabled }) => {
+// Ollama chat — streaming display + full-text TTS
+ipcMain.handle('ollama:chat', async (event, { model, message, voiceEnabled, voice, ttsEngine, voiceRate, voicePitch }) => {
   conversation.addUserMessage(message);
 
   let fullResponse = '';
@@ -162,7 +163,6 @@ ipcMain.handle('ollama:chat', async (event, { model, message, voiceEnabled }) =>
         system: conversation.systemPrompt,
       },
       (delta) => {
-        // Push each chunk to renderer for UI display
         event.sender.send('ollama:stream', { content: delta, done: false });
       }
     );
@@ -178,12 +178,12 @@ ipcMain.handle('ollama:chat', async (event, { model, message, voiceEnabled }) =>
   conversation.addAssistantMessage(fullResponse);
   event.sender.send('ollama:stream', { content: '', done: true });
 
-  // Generate TTS for the entire response as one audio — no splitting
+  // Generate TTS
   if (voiceEnabled !== false && fullResponse.trim()) {
     try {
       const cleaned = cleanForSpeech(fullResponse.trim());
       if (cleaned) {
-        const audio = await generateSpeech(cleaned, 'jarvis');
+        const audio = await generateSpeech(cleaned, voice || 'jarvis');
         mainWindow?.webContents.send('tts:chunk', {
           audio: audio.toString('base64'),
           done: false,
@@ -232,6 +232,13 @@ ipcMain.handle('stt:transcribe', async (_event, audioBytes) => {
     return { text: '', error: err.message };
   }
 });
+
+// File operations
+ipcMain.handle('file:read', async (_event, filePath) => fileops.readFile(filePath));
+ipcMain.handle('file:write', async (_event, { path: filePath, content }) => fileops.writeFile(filePath, content));
+ipcMain.handle('file:list', async (_event, { path: dirPath, maxDepth }) => fileops.listFiles(dirPath, maxDepth));
+ipcMain.handle('file:openDialog', async () => fileops.openFileDialog(mainWindow));
+ipcMain.handle('file:saveDialog', async (_event, { content, defaultName }) => fileops.saveFileDialog(mainWindow, content, defaultName));
 
 // ─── App Lifecycle ─────────────────────────────────────
 app.whenReady().then(async () => {

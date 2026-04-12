@@ -32,6 +32,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // STT
   sttTranscribe: (audioBytes) => ipcRenderer.invoke('stt:transcribe', audioBytes),
 
+  // File operations
+  fileRead: (filePath) => ipcRenderer.invoke('file:read', filePath),
+  fileWrite: (opts) => ipcRenderer.invoke('file:write', opts),
+  fileList: (opts) => ipcRenderer.invoke('file:list', opts),
+  fileOpenDialog: () => ipcRenderer.invoke('file:openDialog'),
+  fileSaveDialog: (opts) => ipcRenderer.invoke('file:saveDialog', opts),
+
   // Generic IPC
   send: (channel, data) => ipcRenderer.send(channel, data),
   on: (channel, callback) => {

@@ -1,9 +1,23 @@
 import { create } from 'zustand';
 import type { Message } from '../types/chat';
 
+// ── Types ──────────────────────────────────────────────
 interface OllamaModel {
   name: string;
   size: number;
+}
+
+interface AppSettings {
+  ttsEngine: 'edge' | 'fish';
+  voice: 'jarvis' | 'friday';
+  voiceRate: number; // -50 to +50
+  voicePitch: number; // -50 to +50
+  micAlwaysOn: boolean;
+  silenceMs: number; // auto-stop after N ms silence
+  ollamaEndpoint: string;
+  apiProvider: 'ollama' | 'openai';
+  apiKey: string;
+  apiModel: string;
 }
 
 interface ChatState {
@@ -14,8 +28,10 @@ interface ChatState {
   availableModels: OllamaModel[];
   voiceEnabled: boolean;
   isSpeaking: boolean;
-  micActive: boolean; // recording in progress
-  micStatus: string; // "Transcribing..." etc
+  micActive: boolean;
+  micStatus: string;
+  settingsOpen: boolean;
+  settings: AppSettings;
 
   sendMessage: (text: string) => Promise<void>;
   checkOllamaStatus: () => Promise<void>;
@@ -24,6 +40,8 @@ interface ChatState {
   toggleVoice: () => void;
   stopSpeaking: () => void;
   toggleMic: () => void;
+  toggleSettings: () => void;
+  updateSettings: (patch: Partial<AppSettings>) => void;
 }
 
 // ── Text cleanup for TTS ──────────────────────────────
@@ -97,6 +115,11 @@ function stopAllAudio() {
     audioPlayer.currentTime = 0;
     audioPlayer = null;
   }
+  if (standalonePlayer) {
+    standalonePlayer.pause();
+    standalonePlayer.currentTime = 0;
+    standalonePlayer = null;
+  }
 }
 
 // ── Standalone TTS (for boot greeting etc) ─────────────
@@ -139,12 +162,70 @@ let silenceTimer: ReturnType<typeof setTimeout> | null = null;
 let audioContext: AudioContext | null = null;
 let analyser: AnalyserNode | null = null;
 let silenceMonitorRaf: number | null = null;
-const SILENCE_THRESHOLD = 0.01; // volume level below which we consider silence
-const SILENCE_MS = 1500; // stop after 1.5s of silence
+const SILENCE_THRESHOLD = 0.015;
+
+// Voice interrupt monitor — separate from STT
+let interruptAudioContext: AudioContext | null = null;
+let interruptAnalyser: AnalyserNode | null = null;
+let interruptMonitorRaf: number | null = null;
+let interruptStream: MediaStream | null = null;
+
+async function startVoiceInterruptMonitor(onVoiceDetected: () => void) {
+  try {
+    interruptStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch {
+    return; // no mic access, skip
+  }
+
+  interruptAudioContext = new AudioContext();
+  interruptAnalyser = interruptAudioContext.createAnalyser();
+  interruptAnalyser.fftSize = 512;
+  const source = interruptAudioContext.createMediaStreamSource(interruptStream);
+  source.connect(interruptAnalyser);
+
+  const dataArray = new Float32Array(interruptAnalyser.fftSize);
+  let voiceFrames = 0;
+  const VOICE_FRAMES_THRESHOLD = 5; // ~5 frames of voice = intentional speech
+
+  const check = () => {
+    if (!interruptAnalyser) return;
+    interruptAnalyser.getFloatTimeDomainData(dataArray);
+
+    let sum = 0;
+    for (let i = 0; i < dataArray.length; i++) sum += dataArray[i] * dataArray[i];
+    const rms = Math.sqrt(sum / dataArray.length);
+
+    if (rms > 0.03) { // higher threshold for interrupt — must be actual speech
+      voiceFrames++;
+      if (voiceFrames >= VOICE_FRAMES_THRESHOLD) {
+        onVoiceDetected();
+        stopVoiceInterruptMonitor();
+        return;
+      }
+    } else {
+      voiceFrames = Math.max(0, voiceFrames - 1);
+    }
+
+    interruptMonitorRaf = requestAnimationFrame(check);
+  };
+
+  interruptMonitorRaf = requestAnimationFrame(check);
+}
+
+function stopVoiceInterruptMonitor() {
+  if (interruptMonitorRaf) { cancelAnimationFrame(interruptMonitorRaf); interruptMonitorRaf = null; }
+  if (interruptAudioContext) { interruptAudioContext.close(); interruptAudioContext = null; }
+  interruptAnalyser = null;
+  if (interruptStream) {
+    interruptStream.getTracks().forEach(t => t.stop());
+    interruptStream = null;
+  }
+}
 
 async function startRecording(
   onStatus: (status: string) => void,
-  onResult: (text: string) => void
+  onResult: (text: string) => void,
+  silenceMs: number
 ): Promise<boolean> {
   try {
     micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -196,12 +277,12 @@ async function startRecording(
     }
   };
 
-  mediaRecorder.start(250); // collect data every 250ms
-  startSilenceMonitor(micStream);
+  mediaRecorder.start(250);
+  startSilenceMonitor(micStream, silenceMs);
   return true;
 }
 
-function startSilenceMonitor(stream: MediaStream) {
+function startSilenceMonitor(stream: MediaStream, silenceMs: number) {
   audioContext = new AudioContext();
   analyser = audioContext.createAnalyser();
   analyser.fftSize = 512;
@@ -221,15 +302,13 @@ function startSilenceMonitor(stream: MediaStream) {
     if (rms < SILENCE_THRESHOLD) {
       if (!silenceTimer) {
         silenceTimer = setTimeout(() => {
-          // Been silent long enough — stop recording
           if (mediaRecorder && mediaRecorder.state === 'recording') {
             mediaRecorder.stop();
             mediaRecorder = null;
           }
-        }, SILENCE_MS);
+        }, silenceMs);
       }
     } else {
-      // Sound detected — reset silence timer
       if (silenceTimer) {
         clearTimeout(silenceTimer);
         silenceTimer = null;
@@ -257,6 +336,68 @@ function stopRecording() {
   }
 }
 
+// ── Always-on mic loop ────────────────────────────────
+let alwaysOnActive = false;
+
+async function startAlwaysOnLoop(
+  onStatus: (status: string) => void,
+  onResult: (text: string) => void,
+  silenceMs: number
+) {
+  alwaysOnActive = true;
+
+  const loop = async () => {
+    if (!alwaysOnActive) return;
+
+    // Start recording
+    const success = await startRecording(
+      onStatus,
+      (text) => {
+        if (text) onResult(text);
+        // After result, restart the loop
+        if (alwaysOnActive) {
+          setTimeout(loop, 300);
+        }
+      },
+      silenceMs
+    );
+
+    if (!success) {
+      alwaysOnActive = false;
+    }
+  };
+
+  loop();
+}
+
+function stopAlwaysOnLoop() {
+  alwaysOnActive = false;
+  stopRecording();
+}
+
+// ── Default settings ──────────────────────────────────
+const DEFAULT_SETTINGS: AppSettings = {
+  ttsEngine: 'edge',
+  voice: 'jarvis',
+  voiceRate: 0,
+  voicePitch: -10,
+  micAlwaysOn: false,
+  silenceMs: 1500,
+  ollamaEndpoint: 'http://localhost:11434',
+  apiProvider: 'ollama',
+  apiKey: '',
+  apiModel: '',
+};
+
+// ── Load saved settings ───────────────────────────────
+function loadSettings(): AppSettings {
+  try {
+    const saved = localStorage.getItem('system-ai-settings');
+    if (saved) return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+  } catch {}
+  return DEFAULT_SETTINGS;
+}
+
 // ── Store ─────────────────────────────────────────────
 export const useChatStore = create<ChatState>((set, get) => ({
   messages: [
@@ -275,12 +416,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
   isSpeaking: false,
   micActive: false,
   micStatus: '',
+  settingsOpen: false,
+  settings: loadSettings(),
 
   sendMessage: async (text: string) => {
     const api = (window as any).electronAPI;
     if (!api) return;
 
+    // Smart interrupt: stop AI speech when user sends a message
     stopAllAudio();
+    stopVoiceInterruptMonitor();
     set({ isSpeaking: false });
 
     const userMsg: Message = {
@@ -324,6 +469,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
       if (data.done) {
         unsubTts();
         if (hasAudio) set({ isSpeaking: false });
+        // Start voice interrupt monitor after AI finishes speaking
+        if (hasAudio && get().settings.micAlwaysOn) {
+          startVoiceInterruptMonitor(() => {
+            // Voice detected while AI is about to speak again — this handles
+            // the case where TTS is queued. For immediate interrupt,
+            // we rely on sendMessage calling stopAllAudio.
+          });
+        }
         return;
       }
       if (data.audio) {
@@ -338,6 +491,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
         message: text,
         model: get().currentModel || undefined,
         voiceEnabled: get().voiceEnabled,
+        ttsEngine: get().settings.ttsEngine,
+        voice: get().settings.voice,
+        voiceRate: get().settings.voiceRate,
+        voicePitch: get().settings.voicePitch,
       });
     } catch (err: any) {
       set((state) => {
@@ -377,6 +534,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const next = !get().voiceEnabled;
     if (!next) {
       stopAllAudio();
+      stopVoiceInterruptMonitor();
       set({ voiceEnabled: false, isSpeaking: false });
     } else {
       set({ voiceEnabled: true });
@@ -385,6 +543,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   stopSpeaking: () => {
     stopAllAudio();
+    stopVoiceInterruptMonitor();
     set({ isSpeaking: false });
   },
 
@@ -404,25 +563,49 @@ export const useChatStore = create<ChatState>((set, get) => ({
     });
   },
 
-  // ── Mic: push-to-talk ────────────────────────────────
+  toggleSettings: () => set((s) => ({ settingsOpen: !s.settingsOpen })),
+
+  updateSettings: (patch) => {
+    set((state) => {
+      const newSettings = { ...state.settings, ...patch };
+      localStorage.setItem('system-ai-settings', JSON.stringify(newSettings));
+      return { settings: newSettings };
+    });
+  },
+
+  // ── Mic ───────────────────────────────────────────────
   toggleMic: () => {
-    const { micActive } = get();
+    const { micActive, settings } = get();
     if (micActive) {
-      // Stop recording → will transcribe and send
       stopRecording();
-      set({ micActive: false });
+      stopAlwaysOnLoop();
+      set({ micActive: false, micStatus: '' });
     } else {
-      // Start recording
       set({ micActive: true, micStatus: '' });
-      startRecording(
-        (status) => set({ micStatus: status }),
-        (text) => {
-          set({ micActive: false, micStatus: '' });
-          get().sendMessage(text);
-        },
-      ).then((success) => {
-        if (!success) set({ micActive: false });
-      });
+
+      if (settings.micAlwaysOn) {
+        // Always-on mode: keep listening in a loop
+        startAlwaysOnLoop(
+          (status) => set({ micStatus: status }),
+          (text) => {
+            set({ micStatus: '' });
+            get().sendMessage(text);
+          },
+          settings.silenceMs
+        );
+      } else {
+        // Single-shot mode: record once, send, stop
+        startRecording(
+          (status) => set({ micStatus: status }),
+          (text) => {
+            set({ micActive: false, micStatus: '' });
+            get().sendMessage(text);
+          },
+          settings.silenceMs
+        ).then((success) => {
+          if (!success) set({ micActive: false });
+        });
+      }
     }
   },
 }));

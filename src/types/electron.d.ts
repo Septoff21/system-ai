@@ -14,16 +14,24 @@ declare global {
       invoke: (channel: string, ...args: any[]) => Promise<any>;
 
       // Ollama chat
-      chat: (opts: { model?: string; message: string; voiceEnabled?: boolean }) => Promise<{ response: string }>;
+      chat: (opts: {
+        model?: string;
+        message: string;
+        voiceEnabled?: boolean;
+        voice?: 'jarvis' | 'friday';
+        ttsEngine?: 'edge' | 'fish';
+        voiceRate?: number;
+        voicePitch?: number;
+      }) => Promise<{ response: string }>;
       listModels: () => Promise<{ running: boolean; models: Array<{ name: string; size: number }> }>;
       clearHistory: () => Promise<void>;
       onStreamChunk: (callback: (data: { content: string; done: boolean }) => void) => () => void;
 
-      // TTS (Edge TTS via Python server)
+      // TTS
       generateSpeech: (opts: { text: string; voice?: 'jarvis' | 'friday' }) => Promise<{ success: boolean; audio?: string; error?: string }>;
       onTtsChunk: (callback: (data: { audio?: string; done: boolean }) => void) => () => void;
 
-      // STT (Whisper via Python server)
+      // STT
       sttTranscribe: (audioBytes: number[]) => Promise<{ text: string; error?: string }>;
     };
   }

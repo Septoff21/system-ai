@@ -3,11 +3,14 @@ import { useChatStore } from '../../stores/chatStore';
 import './RightPanel.css';
 
 export default function RightPanel() {
-  const { ollamaRunning, currentModel, checkOllamaStatus } = useChatStore();
+  const { ollamaRunning, currentModel, checkOllamaStatus, settings } = useChatStore();
 
   useEffect(() => {
     checkOllamaStatus();
   }, [checkOllamaStatus]);
+
+  const voiceLabel = settings.voice === 'jarvis' ? 'JARVIS' : 'FRIDAY';
+  const ttsLabel = settings.ttsEngine === 'edge' ? 'EDGE' : 'FISH';
 
   return (
     <div className="right-panel">
@@ -21,7 +24,7 @@ export default function RightPanel() {
         <div className="rp-status-list">
           <StatusItem label="OLLAMA" value={ollamaRunning ? 'ONLINE' : 'OFFLINE'} online={ollamaRunning} />
           <StatusItem label="MODEL" value={currentModel || 'NONE'} online={!!currentModel} />
-          <StatusItem label="VOICE" value="JARVIS" online />
+          <StatusItem label="VOICE" value={`${voiceLabel} / ${ttsLabel}`} online />
         </div>
       </div>
 
