@@ -1,0 +1,99 @@
+/* ═══════════════════════════════════════════════════════════
+   Right Panel — Communication + AI Status + System
+   ═══════════════════════════════════════════════════════════ */
+
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 20px;
+  overflow-y: auto;
+}
+
+/* ── Section ──────────────────────────────────────── */
+.rp-section {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rp-section-header {
+  font-size: var(--fs-xs);
+  color: var(--color-primary);
+  letter-spacing: 3px;
+}
+
+/* ── Communication List ───────────────────────────── */
+.rp-comm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rp-comm-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-xs);
+}
+
+.rp-comm-label {
+  flex: 1;
+  color: var(--text-secondary);
+  font-size: 0.6rem;
+  letter-spacing: 0.5px;
+}
+
+.rp-comm-status {
+  font-size: 0.55rem;
+  color: var(--text-tertiary);
+  letter-spacing: 0.5px;
+}
+
+.rp-comm-status--on {
+  color: var(--color-success);
+}
+
+/* ── Status List ──────────────────────────────────── */
+.rp-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rp-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-xs);
+}
+
+.rp-status-label {
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.rp-status-value {
+  color: var(--text-primary);
+  font-size: var(--fs-xs);
+}
+
+/* ── Status Dot ───────────────────────────────────── */
+.rp-status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.rp-status-dot--on {
+  background: var(--color-success);
+  box-shadow: 0 0 6px rgba(var(--color-success-rgb), 0.5);
+}
+
+.rp-status-dot--off {
+  background: var(--color-danger);
+  box-shadow: 0 0 6px rgba(var(--color-danger-rgb), 0.5);
+  opacity: 0.5;
+}

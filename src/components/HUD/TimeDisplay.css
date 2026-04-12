@@ -1,0 +1,46 @@
+.time-display {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.time-main {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.time-hours,
+.time-minutes {
+  font-size: var(--fs-2xl);
+  color: var(--text-primary);
+  text-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+}
+
+.time-colon {
+  font-size: var(--fs-xl);
+  color: var(--color-primary);
+  animation: pulse 1s step-start infinite;
+  margin: 0 2px;
+}
+
+.time-seconds {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  margin-top: -2px;
+}
+
+.time-date {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.time-date-separator {
+  color: var(--color-primary-dim);
+}

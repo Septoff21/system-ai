@@ -1,0 +1,43 @@
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('electronAPI', {
+  // Window controls
+  minimize: () => ipcRenderer.invoke('window:minimize'),
+  maximize: () => ipcRenderer.invoke('window:maximize'),
+  close: () => ipcRenderer.invoke('window:close'),
+  isMaximized: () => ipcRenderer.invoke('window:isMaximized'),
+
+  // System info
+  getHardwareInfo: () => ipcRenderer.invoke('system:getHardwareInfo'),
+
+  // Ollama
+  getOllamaStatus: () => ipcRenderer.invoke('ollama:status'),
+  chat: (opts) => ipcRenderer.invoke('ollama:chat', opts),
+  listModels: () => ipcRenderer.invoke('ollama:listModels'),
+  clearHistory: () => ipcRenderer.invoke('ollama:clearHistory'),
+  onStreamChunk: (callback) => {
+    const subscription = (_event, data) => callback(data);
+    ipcRenderer.on('ollama:stream', subscription);
+    return () => ipcRenderer.removeListener('ollama:stream', subscription);
+  },
+
+  // TTS
+  generateSpeech: (opts) => ipcRenderer.invoke('tts:generate', opts),
+  onTtsChunk: (callback) => {
+    const subscription = (_event, data) => callback(data);
+    ipcRenderer.on('tts:chunk', subscription);
+    return () => ipcRenderer.removeListener('tts:chunk', subscription);
+  },
+
+  // STT
+  sttTranscribe: (audioBytes) => ipcRenderer.invoke('stt:transcribe', audioBytes),
+
+  // Generic IPC
+  send: (channel, data) => ipcRenderer.send(channel, data),
+  on: (channel, callback) => {
+    const subscription = (_event, ...args) => callback(...args);
+    ipcRenderer.on(channel, subscription);
+    return () => ipcRenderer.removeListener(channel, subscription);
+  },
+  invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
+});

@@ -1,0 +1,219 @@
+/* ═══════════════════════════════════════════════════════════
+   HUD Layout Styles
+   ═══════════════════════════════════════════════════════════ */
+
+.hud-layout {
+  width: 100%;
+  height: 100%;
+  padding: 40px 24px 16px;
+  display: grid;
+  grid-template-columns: 220px 1fr 220px;
+  grid-template-rows: 1fr auto;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Left Column ───────────────────────────────────────── */
+.hud-left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 20px;
+}
+
+/* ── Center Column ─────────────────────────────────────── */
+.hud-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.hud-reactor-area {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 260px;
+  width: 100%;
+}
+
+.hud-chat-area {
+  flex: 1;
+  width: 100%;
+  max-width: 700px;
+  min-height: 0;
+}
+
+/* ── Right Column ──────────────────────────────────────── */
+.hud-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 20px;
+}
+
+/* ── Status Panel ──────────────────────────────────────── */
+.hud-status-panel {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hud-status-header {
+  font-size: var(--fs-xs);
+  color: var(--color-primary);
+  letter-spacing: 3px;
+  margin-bottom: 4px;
+}
+
+.hud-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-xs);
+}
+
+.hud-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.hud-status-dot--online {
+  background: var(--color-success);
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+}
+
+.hud-status-dot--offline {
+  background: var(--color-danger);
+  box-shadow: 0 0 8px rgba(255, 51, 85, 0.5);
+}
+
+.hud-status-dot--pending {
+  background: var(--color-warning);
+  box-shadow: 0 0 8px rgba(255, 170, 0, 0.5);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.hud-status-label {
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.hud-status-value {
+  color: var(--text-primary);
+  font-size: var(--fs-xs);
+}
+
+/* ── Bottom Bar ────────────────────────────────────────── */
+.hud-bottom {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.hud-bottom-divider {
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--border-default),
+    transparent
+  );
+}
+
+.hud-bottom-controls {
+  display: flex;
+  gap: 12px;
+}
+
+.hud-icon-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-glass);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.hud-icon-btn:hover {
+  background: rgba(var(--color-primary-rgb), 0.1);
+  border-color: var(--border-default);
+  color: var(--color-primary);
+  box-shadow: 0 0 12px rgba(var(--color-primary-rgb), 0.15);
+}
+
+.hud-icon-btn.active {
+  background: rgba(var(--color-primary-rgb), 0.15);
+  border-color: var(--color-primary-dim);
+  color: var(--color-primary);
+  box-shadow: 0 0 16px rgba(var(--color-primary-rgb), 0.2);
+}
+
+.hud-icon-btn.speaking {
+  animation: pulseGlow 1.5s ease-in-out infinite;
+}
+
+.hud-icon-btn.listening {
+  background: rgba(255, 51, 85, 0.15);
+  border-color: #ff3355;
+  color: #ff3355;
+  animation: listeningPulse 1s ease-in-out infinite;
+}
+
+@keyframes listeningPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 51, 85, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(255, 51, 85, 0.6); }
+}
+
+.hud-listening-transcript {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  animation: fadeIn 0.3s ease;
+}
+
+.hud-listening-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff3355;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Responsive ────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .hud-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto auto;
+  }
+  .hud-left, .hud-right {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .hud-reactor-area {
+    height: 180px;
+  }
+}

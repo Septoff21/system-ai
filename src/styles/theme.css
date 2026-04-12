@@ -1,0 +1,317 @@
+/* ═══════════════════════════════════════════════════════════
+   SYSTEM — Design Token System
+   Jarvis/Friday Sci-Fi HUD Theme
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Primary Palette ─────────────────────────────────── */
+  --color-primary: #00d4ff;
+  --color-primary-rgb: 0, 212, 255;
+  --color-primary-dim: #0088aa;
+  --color-primary-glow: rgba(0, 212, 255, 0.35);
+  --color-primary-ghost: rgba(0, 212, 255, 0.08);
+
+  --color-secondary: #ff6b35;
+  --color-secondary-rgb: 255, 107, 53;
+
+  --color-accent: #a855f7;
+  --color-accent-rgb: 168, 85, 247;
+
+  /* ── Status Colors ───────────────────────────────────── */
+  --color-success: #00ff88;
+  --color-success-rgb: 0, 255, 136;
+  --color-warning: #ffaa00;
+  --color-warning-rgb: 255, 170, 0;
+  --color-danger: #ff3355;
+  --color-danger-rgb: 255, 51, 85;
+  --color-info: #5588ff;
+
+  /* ── Background Layers ───────────────────────────────── */
+  --bg-void: #000000;
+  --bg-base: #050510;
+  --bg-surface: #0a0a1a;
+  --bg-elevated: #0f0f25;
+  --bg-panel: rgba(10, 10, 26, 0.85);
+  --bg-panel-hover: rgba(15, 15, 40, 0.92);
+  --bg-glass: rgba(0, 212, 255, 0.04);
+  --bg-glass-border: rgba(0, 212, 255, 0.12);
+
+  /* ── Text ────────────────────────────────────────────── */
+  --text-primary: #e8eeff;
+  --text-secondary: #8899bb;
+  --text-tertiary: #4a5578;
+  --text-accent: var(--color-primary);
+  --text-on-primary: #000000;
+
+  /* ── Grid & Lines ────────────────────────────────────── */
+  --grid-color: rgba(0, 212, 255, 0.05);
+  --grid-dot: rgba(0, 212, 255, 0.15);
+  --border-subtle: rgba(0, 212, 255, 0.1);
+  --border-default: rgba(0, 212, 255, 0.2);
+  --border-bright: rgba(0, 212, 255, 0.4);
+
+  /* ── Typography ──────────────────────────────────────── */
+  --font-display: 'Orbitron', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+  --font-body: 'Inter', -apple-system, sans-serif;
+
+  --fs-xs: 0.65rem;
+  --fs-sm: 0.75rem;
+  --fs-base: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.25rem;
+  --fs-xl: 1.5rem;
+  --fs-2xl: 2rem;
+  --fs-3xl: 2.5rem;
+  --fs-hero: 3.5rem;
+
+  /* ── Spacing ─────────────────────────────────────────── */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+
+  /* ── Border Radius ───────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* ── Shadows & Glow ──────────────────────────────────── */
+  --glow-sm: 0 0 8px rgba(0, 212, 255, 0.3);
+  --glow-md: 0 0 16px rgba(0, 212, 255, 0.3), 0 0 32px rgba(0, 212, 255, 0.1);
+  --glow-lg: 0 0 24px rgba(0, 212, 255, 0.4), 0 0 48px rgba(0, 212, 255, 0.15), 0 0 80px rgba(0, 212, 255, 0.05);
+  --glow-danger: 0 0 16px rgba(255, 51, 85, 0.3);
+  --glow-success: 0 0 16px rgba(0, 255, 136, 0.3);
+
+  --shadow-panel: 0 4px 32px rgba(0, 0, 0, 0.6), inset 0 0 0 1px var(--border-subtle);
+
+  /* ── Transitions ─────────────────────────────────────── */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 600ms;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Global Reset & Base
+   ═══════════════════════════════════════════════════════════ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-void);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+  cursor: default;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.app-root {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-bright);
+}
+
+/* ── Selection ─────────────────────────────────────────── */
+::selection {
+  background: rgba(0, 212, 255, 0.3);
+  color: white;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Utility Classes
+   ═══════════════════════════════════════════════════════════ */
+
+.font-display { font-family: var(--font-display); }
+.font-mono { font-family: var(--font-mono); }
+.font-body { font-family: var(--font-body); }
+
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-accent { color: var(--color-primary); }
+.text-success { color: var(--color-success); }
+.text-warning { color: var(--color-warning); }
+.text-danger { color: var(--color-danger); }
+
+.glow-text {
+  text-shadow: 0 0 10px var(--color-primary-glow),
+               0 0 20px rgba(0, 212, 255, 0.15);
+}
+
+/* ── HUD Panel Base ────────────────────────────────────── */
+.hud-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-panel);
+  position: relative;
+  overflow: hidden;
+}
+
+.hud-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    var(--color-primary-dim) 20%,
+    var(--color-primary) 50%,
+    var(--color-primary-dim) 80%,
+    transparent
+  );
+  opacity: 0.5;
+}
+
+.hud-panel:hover {
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-panel), var(--glow-sm);
+}
+
+/* ── Corner Decorators ─────────────────────────────────── */
+.hud-corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+}
+.hud-corner::before,
+.hud-corner::after {
+  content: '';
+  position: absolute;
+  background: var(--color-primary);
+}
+.hud-corner--tl { top: -1px; left: -1px; }
+.hud-corner--tl::before { top: 0; left: 0; width: 12px; height: 1px; }
+.hud-corner--tl::after { top: 0; left: 0; width: 1px; height: 12px; }
+
+.hud-corner--tr { top: -1px; right: -1px; }
+.hud-corner--tr::before { top: 0; right: 0; width: 12px; height: 1px; }
+.hud-corner--tr::after { top: 0; right: 0; width: 1px; height: 12px; }
+
+.hud-corner--bl { bottom: -1px; left: -1px; }
+.hud-corner--bl::before { bottom: 0; left: 0; width: 12px; height: 1px; }
+.hud-corner--bl::after { bottom: 0; left: 0; width: 1px; height: 12px; }
+
+.hud-corner--br { bottom: -1px; right: -1px; }
+.hud-corner--br::before { bottom: 0; right: 0; width: 12px; height: 1px; }
+.hud-corner--br::after { bottom: 0; right: 0; width: 1px; height: 12px; }
+
+/* ── Title Bar / Drag Region ───────────────────────────── */
+.titlebar {
+  -webkit-app-region: drag;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--sp-2);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+}
+
+.titlebar-controls {
+  -webkit-app-region: no-drag;
+  display: flex;
+  gap: var(--sp-1);
+}
+
+.titlebar-btn {
+  width: 32px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.titlebar-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.titlebar-btn--close:hover {
+  background: var(--color-danger);
+  color: white;
+}
+
+/* ── Background Grid ───────────────────────────────────── */
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 1px 1px, var(--grid-dot) 1px, transparent 0);
+  background-size: 40px 40px;
+  opacity: 0.3;
+}
+
+/* ── Scanline Overlay ──────────────────────────────────── */
+.scanline-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+}

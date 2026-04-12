@@ -1,0 +1,19 @@
+.arc-reactor {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.arc-reactor-canvas {
+  filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.3));
+}
+
+.arc-reactor-label {
+  font-size: var(--fs-xs);
+  color: var(--color-primary-dim);
+  letter-spacing: 4px;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+  animation: textGlow 3s ease-in-out infinite;
+}
