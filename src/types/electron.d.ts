@@ -1,5 +1,23 @@
 export {};
 
+interface HardwareInfo {
+  cpuBrand: string;
+  cores: number;
+  ramTotalGB: number;
+  ramFreeGB: number;
+  gpuModel: string;
+  gpuVram: number;
+}
+
+interface DepCheckResult {
+  ollama: { installed: boolean; running: boolean; endpoint: string };
+  python: { installed: boolean; path: string };
+  edgeTts: { installed: boolean };
+  fasterWhisper: { installed: boolean };
+  hardware: HardwareInfo | null;
+  models: Array<{ name: string; size: number }>;
+}
+
 declare global {
   interface Window {
     electronAPI?: {
@@ -33,6 +51,12 @@ declare global {
 
       // STT
       sttTranscribe: (audioBytes: number[]) => Promise<{ text: string; error?: string }>;
+
+      // Setup wizard
+      checkDependencies: () => Promise<DepCheckResult>;
+      pullModel: (modelName: string) => Promise<{ success: boolean; error?: string }>;
+      onPullProgress: (callback: (data: { model: string; percent: number; status: string }) => void) => () => void;
+      writeUserMd: (content: string) => Promise<{ success: boolean; error?: string }>;
     };
   }
 }

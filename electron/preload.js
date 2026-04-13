@@ -39,6 +39,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   fileOpenDialog: () => ipcRenderer.invoke('file:openDialog'),
   fileSaveDialog: (opts) => ipcRenderer.invoke('file:saveDialog', opts),
 
+  // Setup wizard
+  checkDependencies: () => ipcRenderer.invoke('setup:checkDeps'),
+  pullModel: (modelName) => ipcRenderer.invoke('setup:pullModel', modelName),
+  onPullProgress: (callback) => {
+    const subscription = (_event, data) => callback(data);
+    ipcRenderer.on('setup:pullProgress', subscription);
+    return () => ipcRenderer.removeListener('setup:pullProgress', subscription);
+  },
+  writeUserMd: (content) => ipcRenderer.invoke('setup:writeUserMd', content),
+
   // Generic IPC
   send: (channel, data) => ipcRenderer.send(channel, data),
   on: (channel, callback) => {

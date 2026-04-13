@@ -240,6 +240,126 @@ ipcMain.handle('file:list', async (_event, { path: dirPath, maxDepth }) => fileo
 ipcMain.handle('file:openDialog', async () => fileops.openFileDialog(mainWindow));
 ipcMain.handle('file:saveDialog', async (_event, { content, defaultName }) => fileops.saveFileDialog(mainWindow, content, defaultName));
 
+// ─── Setup Wizard IPC ──────────────────────────────────
+const pythonPath = require('./services/python');
+
+ipcMain.handle('setup:checkDeps', async () => {
+  const { execSync } = require('child_process');
+  const fs = require('fs');
+
+  const result = {
+    ollama: { installed: false, running: false, endpoint: 'http://localhost:11434' },
+    python: { installed: false, path: pythonPath },
+    edgeTts: { installed: false },
+    fasterWhisper: { installed: false },
+    hardware: null,
+    models: [],
+  };
+
+  // Check Ollama
+  try {
+    const res = await fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(3000) });
+    const data = await res.json();
+    result.ollama.running = true;
+    result.ollama.installed = true;
+    result.models = (data.models || []).map((m) => ({ name: m.name, size: m.size }));
+  } catch {
+    // Check if ollama binary exists
+    try {
+      execSync(process.platform === 'win32' ? 'where ollama' : 'which ollama', { encoding: 'utf-8', timeout: 5000, stdio: ['pipe', 'pipe', 'ignore'] });
+      result.ollama.installed = true;
+    } catch {}
+  }
+
+  // Check Python
+  try {
+    const ver = execSync(`"${pythonPath}" --version`, { encoding: 'utf-8', timeout: 5000, stdio: ['pipe', 'pipe', 'ignore'] });
+    result.python.installed = !!ver.trim();
+  } catch {}
+
+  // Check edge-tts
+  try {
+    execSync(`"${pythonPath}" -c "import edge_tts"`, { encoding: 'utf-8', timeout: 5000, stdio: ['pipe', 'pipe', 'ignore'] });
+    result.edgeTts.installed = true;
+  } catch {}
+
+  // Check faster-whisper
+  try {
+    execSync(`"${pythonPath}" -c "import faster_whisper"`, { encoding: 'utf-8', timeout: 5000, stdio: ['pipe', 'pipe', 'ignore'] });
+    result.fasterWhisper.installed = true;
+  } catch {}
+
+  // Hardware info
+  try {
+    const si = require('systeminformation');
+    const [cpu, mem, graphics] = await Promise.all([si.cpu(), si.mem(), si.graphics()]);
+    result.hardware = {
+      cpuBrand: cpu.brand,
+      cores: cpu.cores,
+      ramTotalGB: +(mem.total / 1e9).toFixed(1),
+      ramFreeGB: +(mem.free / 1e9).toFixed(1),
+      gpuModel: graphics.controllers[0]?.model || 'Unknown',
+      gpuVram: graphics.controllers[0]?.vram || 0,
+    };
+  } catch {}
+
+  return result;
+});
+
+ipcMain.handle('setup:pullModel', async (event, modelName) => {
+  const { spawn } = require('child_process');
+  return new Promise((resolve, reject) => {
+    const child = spawn('ollama', ['pull', modelName], { stdio: ['pipe', 'pipe', 'pipe'] });
+    let output = '';
+
+    child.stdout.on('data', (data) => {
+      output += data.toString();
+      // Parse progress from Ollama output
+      const lines = data.toString().split('\n');
+      for (const line of lines) {
+        const pctMatch = line.match(/(\d+)%/);
+        if (pctMatch) {
+          event.sender.send('setup:pullProgress', {
+            model: modelName,
+            percent: parseInt(pctMatch[1]),
+            status: line.trim(),
+          });
+        }
+      }
+    });
+
+    child.stderr.on('data', (data) => {
+      output += data.toString();
+    });
+
+    child.on('close', (code) => {
+      if (code === 0) {
+        event.sender.send('setup:pullProgress', { model: modelName, percent: 100, status: 'Done' });
+        resolve({ success: true });
+      } else {
+        resolve({ success: false, error: output.slice(-500) });
+      }
+    });
+
+    child.on('error', (err) => {
+      reject({ success: false, error: err.message });
+    });
+  });
+});
+
+ipcMain.handle('setup:writeUserMd', async (_event, content) => {
+  const fs = require('fs');
+  const userMdPath = path.join(__dirname, '../user.md');
+  try {
+    fs.writeFileSync(userMdPath, content, 'utf-8');
+    // Reload user context in conversation manager
+    conversation.reloadUserContext();
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
 // ─── App Lifecycle ─────────────────────────────────────
 app.whenReady().then(async () => {
   // Start Python TTS server
