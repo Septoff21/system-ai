@@ -1,9 +1,9 @@
-# Implementation Plan
+# Architecture Design
 
 > **Moved to `.agent/work/IMPLEMENTATION.md`**
 >
-> This file is kept for backwards compatibility. All implementation details,
-> architecture notes, and technical reference are now in the work folder.
+> This file is kept for backwards compatibility. All architecture and design
+> documents are now in `.agent/work/`.
 >
 > See:
 > - `.agent/PROJECT_STATUS.md` — Current project state
