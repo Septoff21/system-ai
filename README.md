@@ -92,11 +92,22 @@ Click the gear icon in the bottom bar to configure:
 
 ### Python Path
 
-If Python is not in your PATH, edit the hardcoded path in:
-- `electron/services/tts.js` (line 6)
-- `electron/services/stt.js` (line 4)
+Python is auto-detected in this order:
 
-Default: `C:\Users\PC\AppData\Local\Programs\Python\Python312\python.exe`
+1. Environment variable `PYTHON_PATH` or `PYTHON`
+2. `python` / `python3` on your system PATH
+3. Common install locations per platform
+
+To override, set the env var before launching:
+
+```bash
+# Windows (PowerShell)
+$env:PYTHON_PATH = "C:\Path\To\python.exe"
+npm run electron:dev
+
+# macOS / Linux
+PYTHON_PATH=/usr/bin/python3 npm run electron:dev
+```
 
 ## Architecture
 
@@ -105,6 +116,7 @@ Electron Main Process
   ├── main.js                    — Entry, IPC handlers, lifecycle
   ├── preload.js                 — contextBridge IPC bridge
   └── services/
+      ├── python.js              — Auto-detect Python executable path
       ├── ollama.js              — Ollama HTTP API
       ├── conversation.js        — Chat history + system prompts
       ├── tts.js                 — Edge TTS wrapper

@@ -2,7 +2,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const http = require('http');
 
-const PYTHON = 'C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python312\\python.exe';
+const PYTHON = require('./python');
 const STT_SERVER = path.join(__dirname, 'stt_server.py');
 
 let pythonProcess = null;
