@@ -49,6 +49,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   writeUserMd: (content) => ipcRenderer.invoke('setup:writeUserMd', content),
 
+  // LLM provider management
+  llmGetProviders: () => ipcRenderer.invoke('llm:getProviders'),
+  llmGetActive: () => ipcRenderer.invoke('llm:getActive'),
+  llmSetProvider: (opts) => ipcRenderer.invoke('llm:setProvider', opts),
+  llmListModels: (providerId) => ipcRenderer.invoke('llm:listModels', providerId),
+  llmTestProvider: (providerId) => ipcRenderer.invoke('llm:testProvider', providerId),
+
+  // Keystore
+  keystoreSet: (opts) => ipcRenderer.invoke('keystore:set', opts),
+  keystoreGetAll: () => ipcRenderer.invoke('keystore:getAll'),
+
   // Generic IPC
   send: (channel, data) => ipcRenderer.send(channel, data),
   on: (channel, callback) => {

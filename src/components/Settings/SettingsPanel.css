@@ -222,11 +222,101 @@
   box-shadow: 0 0 8px rgba(var(--color-primary-rgb), 0.5);
 }
 
+/* API key row */
+.settings-key-row {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  max-width: 280px;
+}
+
+.settings-key-row .settings-input {
+  max-width: none;
+  flex: 1;
+}
+
+.settings-key-btn {
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.settings-key-btn:hover:not(:disabled) {
+  border-color: var(--color-primary-dim);
+  color: var(--color-primary);
+}
+
+.settings-key-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.settings-key-test.ok    { border-color: #00ff8855; color: #00ff88; }
+.settings-key-test.error { border-color: #ff446655; color: #ff4466; }
+
+.settings-hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  text-align: right;
+  padding-right: 2px;
+}
+
+.settings-hint-link {
+  color: var(--color-primary-dim);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Provider dots */
+.settings-provider-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.settings-provider-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--bg-glass-border);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.settings-provider-dot.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 6px rgba(var(--color-primary-rgb), 0.5);
+}
+
+.settings-provider-status-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-left: 4px;
+}
+
 .settings-footer {
   padding: 12px 20px;
   border-top: 1px solid var(--bg-glass-border);
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-hint-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
 }
 
 .settings-version {

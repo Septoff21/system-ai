@@ -7,14 +7,20 @@ interface OllamaModel {
   size: number;
 }
 
+export type ProviderId = 'ollama' | 'groq' | 'openrouter' | 'gemini' | 'openai' | 'anthropic';
+
 interface AppSettings {
   ttsEngine: 'edge' | 'fish';
   voice: 'jarvis' | 'friday';
-  voiceRate: number; // -50 to +50
-  voicePitch: number; // -50 to +50
+  voiceRate: number;
+  voicePitch: number;
   micAlwaysOn: boolean;
-  silenceMs: number; // auto-stop after N ms silence
+  silenceMs: number;
   ollamaEndpoint: string;
+  // Multi-provider
+  activeProvider: ProviderId;
+  activeModel: string;
+  // Legacy (kept for compat)
   apiProvider: 'ollama' | 'openai';
   apiKey: string;
   apiModel: string;
@@ -384,6 +390,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   micAlwaysOn: false,
   silenceMs: 1500,
   ollamaEndpoint: 'http://localhost:11434',
+  activeProvider: 'ollama',
+  activeModel: '',
   apiProvider: 'ollama',
   apiKey: '',
   apiModel: '',
@@ -569,6 +577,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((state) => {
       const newSettings = { ...state.settings, ...patch };
       localStorage.setItem('system-ai-settings', JSON.stringify(newSettings));
+
+      const api = (window as any).electronAPI;
+      // Sync provider change to main process
+      if (patch.activeProvider || patch.activeModel) {
+        api?.llmSetProvider({
+          provider: newSettings.activeProvider,
+          model: newSettings.activeModel || undefined,
+        });
+      }
+
       return { settings: newSettings };
     });
   },

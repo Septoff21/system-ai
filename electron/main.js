@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, globalShortcut, Tray, Menu, nativeImage, session } = require('electron');
 const path = require('path');
-const { checkStatus, chatStream } = require('./services/ollama');
+const llm = require('./services/llm');
+const keystore = require('./services/keystore');
 const { ConversationManager } = require('./services/conversation');
 const { generateSpeech, startServer: startTtsServer, shutdown: shutdownTts } = require('./services/tts');
 const { transcribe, startServer: startSttServer, shutdown: shutdownStt } = require('./services/stt');
@@ -144,21 +145,55 @@ ipcMain.handle('system:getHardwareInfo', async () => {
   }
 });
 
-// Ollama status check
-ipcMain.handle('ollama:status', async () => {
-  return checkStatus();
+// LLM provider management
+ipcMain.handle('llm:getProviders', () => llm.getProviderList());
+ipcMain.handle('llm:getActive', () => llm.getActiveProvider());
+
+ipcMain.handle('llm:setProvider', (_event, { provider, model }) => {
+  llm.setProvider(provider, model);
+  return llm.getActiveProvider();
 });
 
-// Ollama chat — streaming display + full-text TTS
+ipcMain.handle('llm:listModels', async (_event, providerId) => {
+  return llm.listModels(providerId);
+});
+
+ipcMain.handle('llm:testProvider', async (_event, providerId) => {
+  return llm.testProvider(providerId);
+});
+
+// Keystore — encrypted API key storage
+ipcMain.handle('keystore:set', (_event, { provider, key }) => {
+  keystore.setKey(provider, key);
+  llm.setKey(provider, key);
+  return { ok: true };
+});
+
+ipcMain.handle('keystore:getAll', () => {
+  // Return which providers have keys (not the keys themselves)
+  const keys = keystore.getAllKeys();
+  const result = {};
+  for (const [k, v] of Object.entries(keys)) {
+    result[k] = !!v; // just true/false
+  }
+  return result;
+});
+
+// Ollama status check (kept for setup wizard compatibility)
+ipcMain.handle('ollama:status', async () => {
+  return llm.checkOllamaStatus();
+});
+
+// Chat — routes through active LLM provider
 ipcMain.handle('ollama:chat', async (event, { model, message, voiceEnabled, voice, ttsEngine, voiceRate, voicePitch }) => {
   conversation.addUserMessage(message);
 
   let fullResponse = '';
 
   try {
-    fullResponse = await chatStream(
+    fullResponse = await llm.chatStream(
       {
-        model: model || currentModel,
+        model: model || undefined,
         messages: conversation.getMessages(),
         system: conversation.systemPrompt,
       },
@@ -199,9 +234,9 @@ ipcMain.handle('ollama:chat', async (event, { model, message, voiceEnabled, voic
   return { response: fullResponse };
 });
 
-// List available models
+// List available models (ollama-specific, for setup wizard)
 ipcMain.handle('ollama:listModels', async () => {
-  return checkStatus();
+  return llm.checkOllamaStatus();
 });
 
 // Clear conversation history
@@ -362,6 +397,12 @@ ipcMain.handle('setup:writeUserMd', async (_event, content) => {
 
 // ─── App Lifecycle ─────────────────────────────────────
 app.whenReady().then(async () => {
+  // Load saved API keys into LLM router
+  const savedKeys = keystore.getAllKeys();
+  for (const [provider, key] of Object.entries(savedKeys)) {
+    if (key) llm.setKey(provider, key);
+  }
+
   // Start Python TTS server
   try {
     const port = await startTtsServer();
