@@ -41,6 +41,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Setup wizard
   checkDependencies: () => ipcRenderer.invoke('setup:checkDeps'),
+  recheckDeps: () => ipcRenderer.invoke('setup:recheckDeps'),
+  installDeps: () => ipcRenderer.invoke('setup:installDeps'),
+  onInstallOutput: (callback) => {
+    const subscription = (_event, data) => callback(data);
+    ipcRenderer.on('setup:installOutput', subscription);
+    return () => ipcRenderer.removeListener('setup:installOutput', subscription);
+  },
+  openUrl: (url) => ipcRenderer.invoke('setup:openUrl', url),
   pullModel: (modelName) => ipcRenderer.invoke('setup:pullModel', modelName),
   onPullProgress: (callback) => {
     const subscription = (_event, data) => callback(data);

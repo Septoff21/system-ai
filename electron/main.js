@@ -382,6 +382,42 @@ ipcMain.handle('setup:pullModel', async (event, modelName) => {
   });
 });
 
+// Stream pip install to renderer
+ipcMain.handle('setup:installDeps', async (event) => {
+  const { spawn } = require('child_process');
+  const send = (text) => event.sender.send('setup:installOutput', text);
+
+  return new Promise((resolve) => {
+    const proc = spawn(pythonPath, [
+      '-m', 'pip', 'install', 'edge-tts', 'faster-whisper', '--no-warn-script-location', '--progress-bar', 'off',
+    ], { stdio: ['pipe', 'pipe', 'pipe'] });
+
+    proc.stdout.on('data', (d) => send(d.toString()));
+    proc.stderr.on('data', (d) => send(d.toString()));
+    proc.on('close', (code) => resolve({ success: code === 0 }));
+    proc.on('error', (err) => resolve({ success: false, error: err.message }));
+  });
+});
+
+// Open URL in system browser (for Ollama download page)
+ipcMain.handle('setup:openUrl', (_event, url) => {
+  const { shell } = require('electron');
+  shell.openExternal(url);
+});
+
+// Re-check deps (call after install)
+ipcMain.handle('setup:recheckDeps', async () => {
+  const { execSync } = require('child_process');
+  const result = { edgeTts: false, fasterWhisper: false, ollama: false };
+  try { execSync(`"${pythonPath}" -c "import edge_tts"`, { timeout: 5000, stdio: 'ignore' }); result.edgeTts = true; } catch {}
+  try { execSync(`"${pythonPath}" -c "import faster_whisper"`, { timeout: 5000, stdio: 'ignore' }); result.fasterWhisper = true; } catch {}
+  try {
+    const r = await fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(2000) });
+    result.ollama = r.ok;
+  } catch {}
+  return result;
+});
+
 ipcMain.handle('setup:writeUserMd', async (_event, content) => {
   const fs = require('fs');
   const userMdPath = path.join(__dirname, '../user.md');
